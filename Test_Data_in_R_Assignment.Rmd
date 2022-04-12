@@ -1,6 +1,6 @@
 ---
-title: "Text_Data_in_R"
-author: "Juliet"
+title: "EDS 231: Text and Sentiment Analysis for Environmental Problems - Text Data in R"
+author: "Juliet Cohen"
 date: "4/9/2022"
 output: html_document
 ---
@@ -14,12 +14,11 @@ library(jsonlite) #cconvert results from API queries into R-friendly formats
 library(tidyverse) 
 library(tidytext) # text data management and analysis
 library(ggplot2) # plot word frequencies and publication dates
-library(RColorBrewer)
 ```
 
 ```{r}
 # the from JSON flatten the JSON object, then convert to a data frame
-query_results <- fromJSON("http://api.nytimes.com/svc/search/v2/articlesearch.json?q=wildlife&api-key=IpTnsNntENJKZIG3hUdas1S5PWeEt1ko", flatten = TRUE) #the string following "key=" is your API key 
+query_results <- fromJSON("http://api.nytimes.com/svc/search/v2/articlesearch.json?q=cat&api-key=IpTnsNntENJKZIG3hUdas1S5PWeEt1ko", flatten = TRUE) #the string following "key=" is your API key 
 # q = wildlife is the word we are looking for
 # flatten = true unnests the JSON structure so we can work with the data
 
@@ -37,7 +36,7 @@ names(query_results) # what variables are we working with? these are the variabl
 # the periods are bc it used to be a JSON object
 ```
 
-Create a query for the word "wildlife" spanning from 1 year ago to today (April 9th, 2022) 
+Create a query for the word "cat" spanning from 1 year ago to today (April 9th, 2022) 
 
 ```{r}
 term <- "cat" # Need to use + to string together separate words
@@ -92,9 +91,7 @@ nytDat_cat %>%
   geom_bar(aes(x = reorder(pubDay, count), y=count), stat="identity") + coord_flip() +
   ylab("Number of Articles Published") +
   xlab("Date Article was Published") +
-  ggtitle("NYT Articles published with the word 'cat' (2021-04-09 - 2022-04-09)") #+
-  #scale_fill_brewer(palette = "Dark2")
-  #scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))
+  ggtitle("NYT Articles published with the word 'cat' (2021-04-09 - 2022-04-09)")
   
 ```
 
@@ -156,12 +153,12 @@ tokenized$word
 words <- tokenized$word
 length(words) # 2063 words 
 
-clean_tokens <- str_replace_all(tokenized$word,"pets","pet") # stem the word "furry" to "fur", I expect to see "furry" often in these articles
+clean_tokens <- str_replace_all(tokenized$word,"pet[a-z,A-Z]*","pet") # stem the word "furry" to "fur", I expect to see "furry" often in these articles
 #clean_tokens <- str_replace_all(tokenized$word,"pet[a-z,A-Z]*","pet")
 
-clean_tokens <- str_replace_all(tokenized$word,"cats","cat") # stem the word "", which I expect to see often in these articles
+clean_tokens <- str_replace_all(clean_tokens,"cat[a-z,A-Z]*","cat") # stem the word "", which I expect to see often in these articles
 
-clean_tokens <- str_replace_all(tokenized$word,"sleep.+","sleep") # stem the words "sleepy", "sleepiest" etc. to "sleep", I expect to see iterations of the word "sleep" often in these articles
+clean_tokens <- str_replace_all(clean_tokens,"sleep[a-z,A-Z]*","sleep") # stem the words "sleepy", "sleepiest" etc. to "sleep", I expect to see iterations of the word "sleep" often in these articles
 
 clean_tokens <- str_remove_all(clean_tokens, "[:digit:]") # remove all numbers
 
@@ -169,13 +166,13 @@ clean_tokens <- gsub("’s", '', clean_tokens) # remove all 's at the end of wor
 
 tokenized$clean <- clean_tokens
 
-#tokenized %>%
-#  count(clean, sort = TRUE) %>%
-# # illegible with all the words displayed
-#  mutate(clean = reorder(clean, n)) %>%
-#  ggplot(aes(n, clean)) +
-#  geom_col() +
-#  labs(y = NULL)
+tokenized %>%
+ count(clean, sort = TRUE) %>%
+# illegible with all the words displayed
+ mutate(clean = reorder(clean, n)) %>%
+ ggplot(aes(n, clean)) +
+ geom_col() +
+ labs(y = NULL)
 
 # remove the empty strings
 tib <- subset(tokenized, clean!="")
@@ -193,7 +190,7 @@ tokenized %>%
   labs(y = NULL)
 ```
 
-The stmmed word "cat" appears the most by a large margin. The second most common word is "people". 
+The stmmed word "cat" appears the most by a large margin. The second most common word is "pet". The thirs most common word is "people".
 
 ### Recreate the publications per day and word frequency plots using the headlines variable (response.docs.headline.main). Compare the distributions of word frequencies between the first paragraph and headlines. Do you see any difference?
 
@@ -205,15 +202,15 @@ names(nytDat_cat)
 main_headline <- names(nytDat_cat)[21]
 # The 6th column, "response.docs.headline.main", is the one we want here
 
-tokenized <- nytDat_cat %>%
+tokenized2 <- nytDat_cat %>%
 # create an df object of the nytData_cat df PLUS a column where each row is a word that was present in the first paragraph of each article (in Tidy format)
   unnest_tokens(word, main_headline)
 
-tokenized[,34]
+#tokenized2[,34]
 ```
 
 ```{r}
-tokenized %>%
+tokenized2 %>%
   count(word, sort = TRUE) %>%
   filter(n > 10) %>% #illegible with all the words displayed
   mutate(word = reorder(word, n)) %>%
@@ -229,11 +226,31 @@ data(stop_words)
 stop_words
 
 # remove stop words from the tokenized df
-tokenized <- tokenized %>%
+tokenized2 <- tokenized2 %>%
   anti_join(stop_words)
 
+#__
+clean_tokens2 <- str_replace_all(tokenized2$word,"pet[a-z,A-Z]*","pet") # stem the word "pets" to "pet", I expect to see "furry" often in these articles
+
+clean_tokens2 <- str_replace_all(clean_tokens2,"cat[a-z,A-Z]*","cat") # stem the word "cats", which I expect to see often in these articles
+
+clean_tokens2 <- str_replace_all(clean_tokens2,"sleep[a-z,A-Z]*","sleep") # stem the words "sleepy", "sleepiest" etc. to "sleep", I expect to see iterations of the word "sleep" often in these articles
+
+clean_tokens2 <- str_remove_all(clean_tokens2, "[:digit:]") # remove all numbers
+
+clean_tokens2 <- gsub("’s", '', clean_tokens2) # remove all 's at the end of words
+
+tokenized2$clean <- clean_tokens2
+
+# remove the empty strings
+tib <- subset(tokenized2, clean!="")
+
+# reassign
+tokenized2 <- tib
+#__
+
 # repeat the same graph, but with the stop words removed and n > 3 rather than 10
-tokenized %>%
+tokenized2 %>%
   count(word, sort = TRUE) %>%
   filter(n > 3) %>%
   mutate(word = reorder(word, n)) %>%
@@ -245,8 +262,7 @@ tokenized %>%
   ggtitle("Occurrence of words in main headline of the NYT articles\nwith the word 'cat' (2021-04-09 - 2022-04-09)")
 ```
 
-
-
+For the main headline, the three most common words in order from most common to least common (with stemming) are "cat", "pet", and "zoo". The first two match the same most common words in the first paragraph (with stemming), but the third most common word differs, because here is it "zoo" instead of "people". In the first paragraph, "zoo" is the sixth most common word after stemming.  
 
 
 
