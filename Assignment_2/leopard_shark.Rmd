@@ -1,0 +1,166 @@
+---
+title: "leopard_shark"
+author: "Juliet"
+date: "4/13/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyr) #text analysis in R
+library(lubridate) #working with date data
+library(pdftools) #read in pdfs
+library(tidyverse)
+library(tidytext)
+library(here)
+library(LexisNexisTools) #Nexis Uni data wrangling
+library(sentimentr)
+library(readr)
+library(textdata)
+```
+
+```{r}
+leopard_shark_filepath <- list.files(pattern = "leopard_shark_articles.docx", path = getwd(),
+                       full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
+
+data <- lnt_read(leopard_shark_filepath)
+```
+
+This time use the full text of the articles for the analysis. First clean any artifacts of the data collection process (hint: this type of thing should be removed: “Apr 04, 2022( Biofuels Digest: http://www.biofuelsdigest.com/ Delivered by Newstex”))
+
+```{r}
+meta_df <- data@meta
+articles_df <- data@articles
+paragraphs_df <- data@paragraphs
+
+data2 <- data_frame(element_id = seq(1:length(meta_df$Headline)), Date = meta_df$Date, Headline = meta_df$Headline)
+
+paragraphs_data <- data_frame(element_id = paragraphs_df$Art_ID, Text  = paragraphs_df$Paragraph)
+
+# join the headlines with the paragraphs to access the full text
+data3 <- inner_join(data2, paragraphs_data, by = "element_id")
+# this df contains columns for the headline of the articles and the paragraphs, with each paragraph as a row, in tidy format
+```
+
+## clean the data
+
+```{r}
+data3_clean <- data3 %>% 
+  mutate(text_https = str_detect(string = data3$Text, pattern = "https", negate = TRUE)) %>% 
+  filter(text_https == TRUE)
+
+nrc_sentiment <- get_sentiments('nrc') #grab the bing sentiment lexicon from tidytext
+head(nrc_sentiment, n = 20)
+
+data3_clean_words <- data3_clean  %>%
+  select(!text_https) %>% 
+  unnest_tokens(output = word, input = Text, token = 'words')
+
+data3_clean_sentiment_words <- data3_clean_words %>% # separate into words
+  anti_join(stop_words, by = 'word') %>% # remove stop words
+  inner_join(nrc_sentiment, by = 'word') %>% # keeps only sentiment words
+  filter(!sentiment %in% c("negative", "positive"))
+```
+
+# Graph results to match Figure 1A from Froelich et al.
+
+```{r}
+graph_data <- data3_clean_sentiment_words %>% 
+  group_by(Date, sentiment) %>% 
+  summarise(total = n()) %>% 
+  mutate(sum = sum(total),
+         proportion = (sum/total))
+
+ggplot(data = graph_data, aes(x = Date, y = proportion, color = sentiment)) +
+  geom_line() +
+  scale_y_continuous(labels = "percent") +
+  facet_grid(~sentiment) +
+  theme(legend.position = "none") +
+  labs(y = "Percentage of Total Daily Words",
+       title = "Comparing Different Sentiment Categories Per Day")
+```
+
+# -------------------------------------------------------------------
+
+
+```{r}
+# look at the sentences from the paragraphs
+paragraph_sentences <- get_sentences(data3$Text)
+class(paragraph_sentences) # list
+
+# add sentiment scores to each paragraph
+sentiment_paragraphs <- sentiment(paragraph_sentences)
+
+sentiment_df <- inner_join(data3, sentiment_paragraphs, by = "element_id")
+
+# approximate the polarity of text by grouping variables
+sentiment <- sentiment_by(sentiment_df$Text)
+
+sentiment_df_arranged <- sentiment_df %>%
+  arrange(sentiment)
+
+# unique(sent_df_sentiment$sentiment)
+```
+
+```{r}
+sent_df_sentiment$polarity <- ifelse(sent_df$sentiment <0, -1, ifelse(sent_df$sentiment > 0, 1, 0))
+
+custom_stop_words <- bind_rows(tibble(word = c("fishermen"),  
+                                      lexicon = c("custom")), 
+                               stop_words)
+```
+
+```{r}
+#bing_sent <- get_sentiments('bing') #grab the bing sentiment lexicon from tidytext
+#head(bing_sent, n = 20)
+```
+
+```{r}
+#unnest to word-level tokens, remove stop words, and join sentiment words
+
+# text_words <- over_text  %>%
+#  unnest_tokens(output = word, input = text, token = 'words')
+ 
+# sent_words <- text_words %>% #break text into individual words
+#  anti_join(stop_words, by = 'word') %>% #returns only the rows without stop words
+#  inner_join(bing_sent, by = 'word') #joins and retains only sentiment words
+```
+
+```{r}
+# Let’s take a look at the most common sentiment words in the data set
+nrc_sent <- get_sentiments('nrc') # requires downloading a large dataset via prompt
+
+# most common words by sentiment
+common_sentiment_words <- sent_df_sentiment %>%
+  unnest_tokens(output = word, input = text, token = 'words') %>%
+  inner_join(nrc_sent) %>%
+  count(word, sort = TRUE)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -2,7 +2,7 @@
 title: "EDS 231: Text and Sentiment Analysis for Environmental Problems - Text Data in R"
 author: "Juliet Cohen"
 date: "4/9/2022"
-output: html_document
+output: 
 ---
 
 ```{r setup, include=FALSE}
