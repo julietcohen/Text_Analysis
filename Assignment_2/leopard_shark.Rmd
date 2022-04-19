@@ -84,28 +84,21 @@ data3_clean_sentiment_words <- data3_clean_words %>%
 # Graph results to match Figure 1A from Froelich et al.
 
 ```{r}
-graph_data_prep <- data3_clean_sentiment_words %>%
-  mutate(year = substring(Date, 1, 4)) %>%
+graph_data <- data3_clean_sentiment_words %>%
+  mutate(year = substring(Date, 1, 4)) %>% 
   select(!Date) %>%  # remove Date col because we only care about year, which is a column we retain
   group_by(year, sentiment) %>% # unique years in this df are 2017, 2019, 2020, 2021, 2022, and NA
   summarise(count = n()) %>% 
   drop_na() # drop na rows, we need the year for all observations to make graph
 
-graph_data <- graph_data_prep %>%
-  
-  mutate()
+class(graph_data$year) # character
+graph_data$year <- as.Date(graph_data$year, format = "%Y")
+class(graph_data$year) # Date
 
-#%>% 
-  mutate(sum = sum(),
-         proportion = (sum/total))
-
-ggplot(data = graph_data, aes(x = year, y = proportion, color = sentiment)) +
+ggplot(data = graph_data, aes(x = year, y = count, color = sentiment)) +
   geom_line() +
-  scale_y_continuous(labels = "percent") +
-  facet_grid(~sentiment) +
-  theme(legend.position = "none") +
-  labs(y = "Percentage of Total Daily Words",
-       title = "Comparing Different Sentiment Categories Per Day")
+  labs(y = "Total Count of Sentiment Words",
+       title = "Sentiment Word Counts in Leopard Shark Text by Year")
 ```
 
 # -------------------------------------------------------------------
