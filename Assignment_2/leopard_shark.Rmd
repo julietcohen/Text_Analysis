@@ -22,6 +22,8 @@ library(readr)
 library(textdata)
 ```
 
+## Read in the data downloaded from Nexis Uni database through the UCSB library
+
 ```{r}
 leopard_shark_filepath <- list.files(pattern = "leopard_shark_articles.docx", path = getwd(),
                        full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
@@ -29,7 +31,7 @@ leopard_shark_filepath <- list.files(pattern = "leopard_shark_articles.docx", pa
 data <- lnt_read(leopard_shark_filepath)
 ```
 
-This time use the full text of the articles for the analysis. First clean any artifacts of the data collection process (hint: this type of thing should be removed: “Apr 04, 2022( Biofuels Digest: http://www.biofuelsdigest.com/ Delivered by Newstex”))
+## Use the full text for analysis
 
 ```{r}
 meta_df <- data@meta
@@ -45,39 +47,56 @@ data3 <- inner_join(data2, paragraphs_data, by = "element_id")
 # this df contains columns for the headline of the articles and the paragraphs, with each paragraph as a row, in tidy format
 ```
 
-## clean the data
+## Clean the data and remove polaized words from the sentiment words
 
 ```{r}
+# make a new column that states TRUE if the row has the string in it
 data3_clean <- data3 %>% 
-  mutate(text_https = str_detect(string = data3$Text, pattern = "https", negate = TRUE)) %>% 
-  filter(text_https == TRUE)
+  mutate(http_present = grepl(pattern = "http", x = Text)) 
+# nrows = 5250
 
-nrc_sentiment <- get_sentiments('nrc') #grab the bing sentiment lexicon from tidytext
+# check how many rows were TRUE and how many were FALSE
+T_F_summary <- data3_clean %>% 
+  group_by(http_present) %>% 
+  summarize(sum = n()) # 5190 rows should be maintained because they do NOT contain the undesired string
+
+# remove all rows with that string
+data3_clean <- data3_clean %>% 
+  filter(http_present == FALSE) 
+
+# check that it worked
+unique(data3_clean$http_present)
+
+# grab the bing sentiment lexicon from tidytext
+nrc_sentiment <- get_sentiments('nrc') 
 head(nrc_sentiment, n = 20)
 
 data3_clean_words <- data3_clean  %>%
-  select(!text_https) %>% 
+  select(!http_present) %>% 
   unnest_tokens(output = word, input = Text, token = 'words')
 
-data3_clean_sentiment_words <- data3_clean_words %>% # separate into words
+data3_clean_sentiment_words <- data3_clean_words %>% 
   anti_join(stop_words, by = 'word') %>% # remove stop words
   inner_join(nrc_sentiment, by = 'word') %>% # keeps only sentiment words
-  filter(!sentiment %in% c("negative", "positive"))
+  filter(!sentiment %in% c("negative", "positive")) # remove the polarized words
 ```
 
 # Graph results to match Figure 1A from Froelich et al.
 
 ```{r}
-library(lubridate)
-
-graph_data <- data3_clean_sentiment_words %>%
-  mutate(year = substring(Date, 1, 4)) %>% 
-  group_by(year, sentiment) %>% 
+graph_data_prep <- data3_clean_sentiment_words %>%
+  mutate(year = substring(Date, 1, 4)) %>%
+  select(!Date) %>%  # remove Date col because we only care about year, which is a column we retain
+  group_by(year, sentiment) %>% # unique years in this df are 2017, 2019, 2020, 2021, 2022, and NA
   summarise(count = n()) %>% 
-  drop_na()
+  drop_na() # drop na rows, we need the year for all observations to make graph
+
+graph_data <- graph_data_prep %>%
+  
+  mutate()
 
 #%>% 
-  mutate(sum = sum(total_sentiment),
+  mutate(sum = sum(),
          proportion = (sum/total))
 
 ggplot(data = graph_data, aes(x = year, y = proportion, color = sentiment)) +
