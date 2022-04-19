@@ -81,7 +81,7 @@ data3_clean_sentiment_words <- data3_clean_words %>%
   filter(!sentiment %in% c("negative", "positive")) # remove the polarized words
 ```
 
-# Graph results to match Figure 1A from Froelich et al.
+# Graph annual raw count of each sentiment word to match Figure 1A from Froelich et al.
 
 ```{r}
 graph_data <- data3_clean_sentiment_words %>%
@@ -91,73 +91,69 @@ graph_data <- data3_clean_sentiment_words %>%
   summarise(count = n()) %>% 
   drop_na() # drop na rows, we need the year for all observations to make graph
 
+max_count <- max(graph_data$count)
+
 class(graph_data$year) # character
 graph_data$year <- as.Date(graph_data$year, format = "%Y")
 class(graph_data$year) # Date
 
 ggplot(data = graph_data, aes(x = year, y = count, color = sentiment)) +
-  geom_line() +
+  geom_line(lwd = 1.5) +
+  theme_classic() +
+  scale_y_continuous(breaks = seq(0, (max_count +10), by = 250)) +
+  theme(legend.position = c(0.2, 0.6),
+        legend.background = element_rect(size=0.5, 
+                                         linetype="solid",
+                                         color = "black")) +
   labs(y = "Total Count of Sentiment Words",
-       title = "Sentiment Word Counts in Leopard Shark Text by Year")
+       x = "Year",
+       title = "Sentiment Word Counts in Leopard Shark Text by Year, 2017-2022",
+       subtitle = "Graph inspiration from Fro") +
+  guides(color = guide_legend()) +
+  labs(color = "Sentiment")
 ```
 
-# -------------------------------------------------------------------
+Plot the amount of emotion words (the 8 from nrc) as a percentage of all the emotion words used each day (aggregate text from articles published on the same day). How does the distribution of emotion words change over time? Can you think of any reason this would be the case?
 
+# Graph daily proportions of sentiment words
 
 ```{r}
-# look at the sentences from the paragraphs
-paragraph_sentences <- get_sentences(data3$Text)
-class(paragraph_sentences) # list
+graph_data_prep <- data3_clean_sentiment_words %>%
+  drop_na() %>%
+  group_by(Date, sentiment) %>%
+  summarise(daily_count = n())
 
-# add sentiment scores to each paragraph
-sentiment_paragraphs <- sentiment(paragraph_sentences)
+daily_total_words <- graph_data_prep %>% 
+  group_by(Date) %>% 
+  summarise(total_daily_words = sum(daily_count))
 
-sentiment_df <- inner_join(data3, sentiment_paragraphs, by = "element_id")
+graph_data <- left_join(graph_data_prep, daily_total_words, by = "Date")
 
-# approximate the polarity of text by grouping variables
-sentiment <- sentiment_by(sentiment_df$Text)
+graph_data_proportions <- graph_data %>% 
+  group_by(sentiment, Date) %>% 
+  summarise(proportion = (daily_count / total_daily_words))
 
-sentiment_df_arranged <- sentiment_df %>%
-  arrange(sentiment)
+# ensure Date col is of class Date, a requirement for line graphs
+class(graph_data_proportions$Date) # Date
+earliest_date <- min(graph_data_proportions$Date)
+latest_date <- max(graph_data_proportions$Date)
 
-# unique(sent_df_sentiment$sentiment)
+ggplot(data = graph_data_proportions, aes(x = Date, y = proportion, color = sentiment)) +
+  geom_line() +
+  theme_classic() +
+  theme(legend.position = c(0.7, 0.8),
+        legend.background = element_rect(size=0.5, 
+                                         linetype="solid",
+                                         color = "black")) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
+  scale_x_continuous(breaks = seq(earliest_date, latest_date, by = 365)) +
+  labs(y = "Porportion of Sentiment Word Detected",
+       x = "Date",
+       title = "Proprotion of Sentiment Words Detected by day in 'Leopard Shark' Text, 2017-2022",
+       subtitle = "Graph inspiration from Figure 3A from Froelich et al. 2017",
+       color = "Sentiment") 
 ```
 
-```{r}
-sent_df_sentiment$polarity <- ifelse(sent_df$sentiment <0, -1, ifelse(sent_df$sentiment > 0, 1, 0))
-
-custom_stop_words <- bind_rows(tibble(word = c("fishermen"),  
-                                      lexicon = c("custom")), 
-                               stop_words)
-```
-
-```{r}
-#bing_sent <- get_sentiments('bing') #grab the bing sentiment lexicon from tidytext
-#head(bing_sent, n = 20)
-```
-
-```{r}
-#unnest to word-level tokens, remove stop words, and join sentiment words
-
-# text_words <- over_text  %>%
-#  unnest_tokens(output = word, input = text, token = 'words')
- 
-# sent_words <- text_words %>% #break text into individual words
-#  anti_join(stop_words, by = 'word') %>% #returns only the rows without stop words
-#  inner_join(bing_sent, by = 'word') #joins and retains only sentiment words
-```
-
-```{r}
-# Let’s take a look at the most common sentiment words in the data set
-nrc_sent <- get_sentiments('nrc') # requires downloading a large dataset via prompt
-
-# most common words by sentiment
-common_sentiment_words <- sent_df_sentiment %>%
-  unnest_tokens(output = word, input = text, token = 'words') %>%
-  inner_join(nrc_sent) %>%
-  count(word, sort = TRUE)
-
-```
 
 
 
