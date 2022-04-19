@@ -68,13 +68,19 @@ data3_clean_sentiment_words <- data3_clean_words %>% # separate into words
 # Graph results to match Figure 1A from Froelich et al.
 
 ```{r}
-graph_data <- data3_clean_sentiment_words %>% 
-  group_by(Date, sentiment) %>% 
-  summarise(total = n()) %>% 
-  mutate(sum = sum(total),
+library(lubridate)
+
+graph_data <- data3_clean_sentiment_words %>%
+  mutate(year = substring(Date, 1, 4)) %>% 
+  group_by(year, sentiment) %>% 
+  summarise(count = n()) %>% 
+  drop_na()
+
+#%>% 
+  mutate(sum = sum(total_sentiment),
          proportion = (sum/total))
 
-ggplot(data = graph_data, aes(x = Date, y = proportion, color = sentiment)) +
+ggplot(data = graph_data, aes(x = year, y = proportion, color = sentiment)) +
   geom_line() +
   scale_y_continuous(labels = "percent") +
   facet_grid(~sentiment) +
