@@ -1,0 +1,108 @@
+---
+title: "EDS 231 - Sentiment_Analysis_II"
+author: "Juliet Cohen"
+date: '2022-04-26'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(quanteda)
+library(quanteda.sentiment)
+library(quanteda.textstats)
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+library(wordcloud) 
+library(reshape2)
+#library(rtweet)
+library(qdapRegex)
+```
+
+Read in Twitter data:
+```{r}
+raw_tweets <- read.csv("/Users/juliet/Documents/MEDS/Text_Analysis/Text_Analysis/Assignment_3/IPCC_tweets_April1-10_sample.csv", header=TRUE)
+
+# Extract Date and Title fields
+data <- raw_tweets[,c(4,6)] 
+
+# create a tibble from the tweet title and date columns
+tweets <- tibble(text = data$Title,
+                  id = seq(1:length(data$Title)),
+                 date = as.Date(data$Date,'%m/%d/%y'))
+
+# head(tweets$text, n = 10)
+
+# simple plot of tweets per day
+tweets %>%
+  count(date) %>%
+  ggplot(aes(x = date, y = n))+
+  geom_line() +
+  labs(title = "Number of Tweets per day")
+```
+
+# Data Cleaning
+
+```{r}
+# let's clean up the URLs from the tweets
+tweets$text <- gsub("http[^[:space:]]*", "", tweets$text)
+
+# remove emojis
+tweets$text <- iconv(tweets$text, "latin1", "ASCII", sub="")
+
+# remove @ and the name of the account tagged because we dont need tagged people in this analysis, just the seniment words
+tweets$text <- gsub("@[^[:space:]]*", "", tweets$text)
+
+# remove # but keep the word following
+tweets$text <- gsub("#", "", tweets$text)
+
+# convert all text to lower case
+tweets$text <- str_to_lower(tweets$text)
+
+# remove quotes
+#tweets$text <- gsub("'", "", tweets$text)
+
+#load sentiment lexicons as usual
+bing_sent <- get_sentiments('bing')
+nrc_sent <- get_sentiments('nrc')
+
+# tokenize tweets to individual words so they will be 1 word per row
+words <- tweets %>%
+  select(id, date, text) %>%
+  unnest_tokens(output = word, input = text, token = "words") %>%
+  anti_join(stop_words, by = "word") %>% # remove stop words
+  left_join(bing_sent, by = "word") %>% # join the words to the sentiment words (label with a sentiment)
+  left_join(
+    tribble(
+      ~sentiment, ~sent_score,
+      "positive", 1,
+      "negative", -1),
+    by = "sentiment")
+# the new sentiment score column is numerical, it is how we assign sentiment to words besides just pos/neg
+```
+
+
+Think about how to further clean a twitter data set. Let’s assume that the mentions of twitter accounts is not useful to us. Remove them from the text field of the tweets tibble.
+
+```{r}
+
+```
+
+
+Compare the ten most common terms in the tweets per day. Do you notice anything interesting?
+
+Adjust the wordcloud in the “wordcloud” chunk by coloring the positive and negative words so they are identifiable.
+
+Let’s say we are interested in the most prominent entities in the Twitter discussion. Which are the top 10 most tagged accounts in the data set. Hint: the “explore_hashtags” chunk is a good starting point.
+
+The Twitter data download comes with a variable called “Sentiment” that must be calculated by Brandwatch. Use your own method to assign each tweet a polarity score (Positive, Negative, Neutral) and compare your classification to Brandwatch’s (hint: you’ll need to revisit the “raw_tweets” data frame).
+
+
+
+```{r}
+
+```
+
+
+
+

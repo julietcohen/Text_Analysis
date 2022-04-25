@@ -1,8 +1,9 @@
 ---
-title: "leopard_shark"
-author: "Juliet"
-date: "4/13/2022"
-output: html_document
+title: "EDS 231: Sentiment Analysis I"
+author: "Juliet Cohen"
+date: "4/19/2022"
+output:
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -22,7 +23,64 @@ library(readr)
 library(textdata)
 ```
 
-## Read in the data downloaded from Nexis Uni database through the UCSB library
+## 0: Using the “IPCC” Nexis Uni data set from the class presentation and the pseudo code we discussed, recreate Figure 1A from Froelich et al. (Date x # of 1) positive, 2) negative, 3) neutral headlines)
+
+```{r}
+# read in nexis data, needs to be specific steps or else errors
+nexis <- "nexis_dat.docx"
+nexis_data <- lnt_read(nexis) 
+nexis_metadata <- nexis_data@meta
+
+# convert nexis_metadata into a dataframe
+nexis_df <- data_frame(element_id = seq(1:length(nexis_metadata$Headline)), 
+                              nexis_date = nexis_metadata$Date, 
+                              nexis_headlines = nexis_metadata$Headline)
+
+# retreieve bing sentiments
+bing_sentiments <- get_sentiments('bing')
+
+nexis_sentiment <- nexis_df$nexis_headlines %>% 
+  get_sentences() %>% 
+  sentiment() %>% 
+  inner_join(nexis_df, by = "element_id") %>%  
+  mutate(sent_category = case_when(
+      sentiment < 0 ~ "Negative",
+      sentiment > 0 ~ "Positive",
+      T ~ "Neutral")) %>% 
+  count(sent_category, nexis_date)
+
+# define limits for y axis
+min_count <- min(nexis_sentiment$n)
+max_count <- max(nexis_sentiment$n)
+
+ggplot(data = nexis_sentiment, aes(x = nexis_date, y = n, color = sent_category)) +
+  geom_line() +
+  labs(y = "Developed Media Sentiment\n(no. headlines)",
+       x = "Date") +
+  labs(color = "Sentiment") +
+  scale_y_continuous(breaks = seq(min_count, max_count, by = 1)) +
+  scale_color_manual(values = c("Positive" = "blue", "Neutral" = "grey", "Negative" = "red")) +
+  theme_classic() +
+  theme(legend.position = c(0.7, 0.8),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 13))
+```
+
+Graph inspiration from Froelich et al. 2017
+
+## 1: Access the Nexis Uni database through the UCSB library: https://www.library.ucsb.edu/research/db/211
+
+Done
+
+## 2: Choose a key search term or terms to define a set of articles.
+
+Search term = "leopard+shark" 
+
+## 3: Use your search term along with appropriate filters to obtain and download a batch of at least 100 full text search results (.docx).
+
+Done
+
+## 4: Read in the 'leopard shark' text data downloaded from Nexis Uni database through the UCSB library
 
 ```{r}
 leopard_shark_filepath <- list.files(pattern = "leopard_shark_articles.docx", path = getwd(),
@@ -31,7 +89,7 @@ leopard_shark_filepath <- list.files(pattern = "leopard_shark_articles.docx", pa
 data <- lnt_read(leopard_shark_filepath)
 ```
 
-## Use the full text for analysis
+## 5: Use the full text for analysis
 
 ```{r}
 meta_df <- data@meta
@@ -81,7 +139,7 @@ data3_clean_sentiment_words <- data3_clean_words %>%
   filter(!sentiment %in% c("negative", "positive")) # remove the polarized words
 ```
 
-# Graph annual raw count of each sentiment word to match Figure 1A from Froelich et al.
+## 6: Data Exploration: graph annual raw count of each sentiment word 
 
 ```{r}
 graph_data <- data3_clean_sentiment_words %>%
@@ -107,15 +165,12 @@ ggplot(data = graph_data, aes(x = year, y = count, color = sentiment)) +
                                          color = "black")) +
   labs(y = "Total Count of Sentiment Words",
        x = "Year",
-       title = "Sentiment Word Counts in Leopard Shark Text by Year, 2017-2022",
-       subtitle = "Graph inspiration from Fro") +
+       title = "Sentiment Word Counts in Leopard Shark Text by Year, 2017-2022") +
   guides(color = guide_legend()) +
   labs(color = "Sentiment")
 ```
 
-Plot the amount of emotion words (the 8 from nrc) as a percentage of all the emotion words used each day (aggregate text from articles published on the same day). How does the distribution of emotion words change over time? Can you think of any reason this would be the case?
-
-# Graph daily proportions of sentiment words
+## 7: Plot the amount of emotion words (the 8 from nrc) as a percentage of all the emotion words used each day (aggregate text from articles published on the same day). How does the distribution of emotion words change over time? Can you think of any reason this would be the case?
 
 ```{r}
 graph_data_prep <- data3_clean_sentiment_words %>%
@@ -149,12 +204,12 @@ ggplot(data = graph_data_proportions, aes(x = Date, y = proportion, color = sent
   scale_x_continuous(breaks = seq(earliest_date, latest_date, by = 365)) +
   labs(y = "Porportion of Sentiment Word Detected",
        x = "Date",
-       title = "Proprotion of Sentiment Words Detected by day in 'Leopard Shark' Text, 2017-2022",
+       title = "Proportion of Daily Sentiment Words Detection for 'Leopard Shark' Text, 2017-2022",
        subtitle = "Graph inspiration from Figure 3A from Froelich et al. 2017",
        color = "Sentiment") 
 ```
 
-
+The distribution of emotion words starts off with fewer observations in the earlier years (2017-2019), and during these years **trust** is the most common sentiment while **disgust** and then **sadness** are the least common sentiments. Starting in 2020 and continuing into 2022, the sentiment observations for "leopard shark" become much more frequent, and **trust** is still the most common sentiment, even though the proportion of **trust** detected in the text decreases compared to the earlier years. However, **disgust** is consistently the least common sentiment during  these later years. I believe an explanation for these trends can be found in the increase in environmental awareness and policies protecting marine habitat in recent years. Additionally, I speculate that more people were talking about leopard sharks starting during the pandemic because perhaps this species was more active in coastal waters with fewer tourists and less water pollution during the lockdowns. Perhaps an explanation for the exceptionally low proportion of **disgust** in 2020-2022 can be found in that fact that people became more aware of environmental issues, species extinction, and the need to talk about the issues on a public platform in a positive, hopeful way. Lastly, **sadness** seems to fluctuate a lot in 2020-2022 while it did not fluctuate much in the earlier years. This would make sense during the pandemic because many people experienced emotional instability in general.
 
 
 
