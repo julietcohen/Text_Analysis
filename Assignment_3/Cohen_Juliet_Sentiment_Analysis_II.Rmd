@@ -2,7 +2,9 @@
 title: "EDS 231 - Sentiment_Analysis_II"
 author: "Juliet Cohen"
 date: '2022-04-26'
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +18,7 @@ library(lubridate)
 library(wordcloud) 
 library(reshape2)
 library(qdapRegex)
-library(kable)
+library(kableExtra)
 ```
 
 Read in Twitter data:
@@ -93,38 +95,90 @@ top_daily_words <- words %>%
   arrange(desc(count)) %>%
   slice(1:10)
 
-top_daily_words_table <- 
+top_daily_words_table <- kable(top_daily_words, 
+                         caption = "Top 10 Daily Words by Day")
+top_daily_words_table
 
 # examine trends of the top 10 words total
 top_10_total <- top_daily_words %>%
   ungroup() %>% 
   slice_max(count, n = 10)
 
-top_10_total
+top_10_words_total_table <- kable(top_10_total, 
+                         caption = "Top 10 Daily Words Total")
+top_10_words_total_table
 
-
-top_daily_words
-
-#order(daily_word_counts$count, decreasing = TRUE)
-
-#subset(daily_word_counts, count == [646)
-
-unique_word_counts <- unique(sort(daily_word_counts$count, decreasing = TRUE))
-
-top_daily_words <- head(sort(daily_word_counts$count, decreasing = TRUE), n = 10)
+#unique_word_counts <- unique(sort(daily_word_counts$count, decreasing = TRUE))
 ```
-
 
 Adjust the wordcloud in the “wordcloud” chunk by coloring the positive and negative words so they are identifiable.
 
+```{r}
+# most common words in general
+words %>%
+   anti_join(stop_words) %>%
+   count(word) %>%
+   with(wordcloud(word, n, max.words = 100))
+
+# sentiment wordcloud
+words %>%
+  # attach sentiments
+inner_join(get_sentiments("bing")) %>%
+  # count the sentiment words, showing largest groups at the top 
+count(word, sentiment, sort = TRUE) %>%
+  # aggregate data by sentiment 
+acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+comparison.cloud(colors = c("firebrick", "forestgreen"),
+                   max.words = 100)
+```
+
+
 Let’s say we are interested in the most prominent entities in the Twitter discussion. Which are the top 10 most tagged accounts in the data set. Hint: the “explore_hashtags” chunk is a good starting point.
+
+```{r}
+corpus <- corpus(data$Title)
+#summary(corpus)
+
+# initial cleaning
+tokens <- tokens(corpus) # tokenize the text so each doc (page, in this case) is a list of tokens (words), the words are bound by their presence in the same text ID, so they are lists
+
+# examine the uncleaned version
+tokens
+
+# clean it up, we dont want commas or the word "a"
+tokens <- tokens(tokens, remove_punct = TRUE,
+                      remove_numbers = TRUE) # sometimes you might want to keep numbers, in this case we remove them, but we only remove stand alone numbers, not numbers that are linked to words
+
+tokens <- tokens_select(tokens, stopwords('english'),selection='remove') #stopwords lexicon built in to quanteda
+
+tokens <- tokens_tolower(tokens)
+```
+
+```{r}
+tag_tweets <- tokens(corpus, remove_punct = TRUE) %>% 
+               tokens_keep(pattern = "@*")
+
+# determine which order the words occurred in the tweets
+dfm_tag<- dfm(tag_tweets)
+
+tag_freq <- textstat_frequency(dfm_tag, n = 100)
+
+# docfreq = amount of docs (tweets) the #word occurred in 
+head(tag_freq, 10)
+
+# tidytext gives us tools to convert to tidy from non-tidy formats
+tag_tib<- tidy(dfm_tag) # tidy() works for document frequency matrices
+
+tag_tib %>%
+   count(term) %>%
+   with(wordcloud(term, n, max.words = 100))
+```
+
 
 The Twitter data download comes with a variable called “Sentiment” that must be calculated by Brandwatch. Use your own method to assign each tweet a polarity score (Positive, Negative, Neutral) and compare your classification to Brandwatch’s (hint: you’ll need to revisit the “raw_tweets” data frame).
 
-
-
 ```{r}
-
+raw_tweets
 ```
 
 
