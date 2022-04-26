@@ -15,8 +15,8 @@ library(tidytext)
 library(lubridate)
 library(wordcloud) 
 library(reshape2)
-#library(rtweet)
 library(qdapRegex)
+library(kable)
 ```
 
 Read in Twitter data:
@@ -42,6 +42,8 @@ tweets %>%
 ```
 
 # Data Cleaning
+
+Think about how to further clean a twitter data set. Let’s assume that the mentions of twitter accounts is not useful to us. Remove them from the text field of the tweets tibble.
 
 ```{r}
 # let's clean up the URLs from the tweets
@@ -81,15 +83,37 @@ words <- tweets %>%
 # the new sentiment score column is numerical, it is how we assign sentiment to words besides just pos/neg
 ```
 
-
-Think about how to further clean a twitter data set. Let’s assume that the mentions of twitter accounts is not useful to us. Remove them from the text field of the tweets tibble.
+Compare the ten most common terms in the tweets per day. Do you notice anything interesting?
 
 ```{r}
+# examine trends of the top 10 words per day
+top_daily_words <- words %>% 
+  group_by(date, word) %>% 
+  summarize(count = n()) %>% 
+  arrange(desc(count)) %>%
+  slice(1:10)
 
+top_daily_words_table <- 
+
+# examine trends of the top 10 words total
+top_10_total <- top_daily_words %>%
+  ungroup() %>% 
+  slice_max(count, n = 10)
+
+top_10_total
+
+
+top_daily_words
+
+#order(daily_word_counts$count, decreasing = TRUE)
+
+#subset(daily_word_counts, count == [646)
+
+unique_word_counts <- unique(sort(daily_word_counts$count, decreasing = TRUE))
+
+top_daily_words <- head(sort(daily_word_counts$count, decreasing = TRUE), n = 10)
 ```
 
-
-Compare the ten most common terms in the tweets per day. Do you notice anything interesting?
 
 Adjust the wordcloud in the “wordcloud” chunk by coloring the positive and negative words so they are identifiable.
 
