@@ -1,10 +1,8 @@
 ---
-title: "EDS 231 - Sentiment_Analysis_II"
+title: "EDS 231 - Sentiment Analysis II - Twitter"
 author: "Juliet Cohen"
 date: '2022-04-26'
-output:
-  html_document:
-    df_print: paged
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -19,6 +17,8 @@ library(wordcloud)
 library(reshape2)
 library(qdapRegex)
 library(kableExtra)
+library(sentimentr)
+library(patchwork)
 ```
 
 Read in Twitter data:
@@ -33,8 +33,6 @@ tweets <- tibble(text = data$Title,
                   id = seq(1:length(data$Title)),
                  date = as.Date(data$Date,'%m/%d/%y'))
 
-# head(tweets$text, n = 10)
-
 # simple plot of tweets per day
 tweets %>%
   count(date) %>%
@@ -45,7 +43,9 @@ tweets %>%
 
 # Data Cleaning
 
-Think about how to further clean a twitter data set. Let’s assume that the mentions of twitter accounts is not useful to us. Remove them from the text field of the tweets tibble.
+## Think about how to further clean a twitter data set. Let’s assume that the mentions of twitter accounts is not useful to us. Remove them from the text field of the tweets tibble.
+
+To clean the data, I removed website links, emojis, @ symbols, and # symbols because mentions of twitter accounts are not useful to us, plus I converted all text to lower case and removed "'s", "'t", and digits.
 
 ```{r}
 # let's clean up the URLs from the tweets
@@ -60,11 +60,20 @@ tweets$text <- gsub("@[^[:space:]]*", "", tweets$text)
 # remove # but keep the word following
 tweets$text <- gsub("#", "", tweets$text)
 
+# remove the @ symbol and the account that follows
+tweets$text <- gsub("@[a-z,A-Z]*", "", tweets$text)
+
 # convert all text to lower case
 tweets$text <- str_to_lower(tweets$text)
 
-# remove quotes
-#tweets$text <- gsub("'", "", tweets$text)
+# remove 's 
+tweets$text <- gsub("'s", "", tweets$text)
+
+# remove 't 
+tweets$text <- gsub("'t", "", tweets$text)
+
+# remove digits
+tweets$text <- str_remove_all(tweets$text, "[:digit:]")
 
 #load sentiment lexicons as usual
 bing_sent <- get_sentiments('bing')
@@ -82,10 +91,16 @@ words <- tweets %>%
       "positive", 1,
       "negative", -1),
     by = "sentiment")
-# the new sentiment score column is numerical, it is how we assign sentiment to words besides just pos/neg
+
+# the new sentiment score column is numerical, it is how we assign sentiment to words
+# besides just pos/neg/neutral/etc.
 ```
 
-Compare the ten most common terms in the tweets per day. Do you notice anything interesting?
+## Compare the ten most common terms in the tweets per day. Do you notice anything interesting?
+
+I noticed that there were much higher word counts on the dates on April 4th, followed by April 5th and 6th, and the word "ipcc"  and "climate" appear on all days. I also noticed that the word "fossil" appears as a top word on many of the days. Overall, the words are more practical, scientific words rather than words that are strongly associated with emotions.
+
+By looking at the total top 10 words over all these days, we can see that they are all reflective of what I would expect to see for this topic.
 
 ```{r}
 # examine trends of the top 10 words per day
@@ -95,31 +110,45 @@ top_daily_words <- words %>%
   arrange(desc(count)) %>%
   slice(1:10)
 
+# look for the individual words "ipcc", "fossil", "time", and "climate"
+ipcc_mentions <- top_daily_words %>% 
+  filter(word == "ipcc")
+
+fossil_mentions <- top_daily_words %>% 
+  filter(word == "fossil")
+
+time_mentions <- top_daily_words %>% 
+  filter(word == "time")
+
+climate_mentions <- top_daily_words %>% 
+  filter(word == "climate")
+
 top_daily_words_table <- kable(top_daily_words, 
                          caption = "Top 10 Daily Words by Day")
 top_daily_words_table
 
 # examine trends of the top 10 words total
-top_10_total <- top_daily_words %>%
-  ungroup() %>% 
-  slice_max(count, n = 10)
+top_10_total <- words %>%
+  group_by(word) %>% 
+  summarize(count = n()) %>% 
+  slice_max(count, n = 10) 
 
-top_10_words_total_table <- kable(top_10_total, 
+top_10_total_table <- kable(top_10_total, 
                          caption = "Top 10 Daily Words Total")
-top_10_words_total_table
+top_10_total_table
 
-#unique_word_counts <- unique(sort(daily_word_counts$count, decreasing = TRUE))
+# plot the top 10 words total 
+ggplot(data = top_10_total, aes(y = reorder(word, count), x = count)) +
+  geom_col(aes(fill = word, width = .5)) +
+  theme_classic() +
+  labs(title = "Top 10 Words Total\nApril 1st, 2022 - April 10th, 2022",
+       x = "Count",
+       y = "Word")
 ```
 
-Adjust the wordcloud in the “wordcloud” chunk by coloring the positive and negative words so they are identifiable.
+## Adjust the wordcloud in the “wordcloud” chunk by coloring the positive and negative words so they are identifiable.
 
 ```{r}
-# most common words in general
-words %>%
-   anti_join(stop_words) %>%
-   count(word) %>%
-   with(wordcloud(word, n, max.words = 100))
-
 # sentiment wordcloud
 words %>%
   # attach sentiments
@@ -129,56 +158,103 @@ count(word, sentiment, sort = TRUE) %>%
   # aggregate data by sentiment 
 acast(word ~ sentiment, value.var = "n", fill = 0) %>%
 comparison.cloud(colors = c("firebrick", "forestgreen"),
-                   max.words = 100)
+                 max.words = 100,
+                 title.colors = c("firebrick", "forestgreen"))
 ```
 
+## Let’s say we are interested in the most prominent entities in the Twitter discussion. Which are the top 10 most tagged accounts in the data set. Hint: the “explore_hashtags” chunk is a good starting point.
 
-Let’s say we are interested in the most prominent entities in the Twitter discussion. Which are the top 10 most tagged accounts in the data set. Hint: the “explore_hashtags” chunk is a good starting point.
-
-```{r}
+```{r corpus_&_quantdata_cleaning}
+# import the corpus for this data
 corpus <- corpus(data$Title)
 #summary(corpus)
 
-# initial cleaning
-tokens <- tokens(corpus) # tokenize the text so each doc (page, in this case) is a list of tokens (words), the words are bound by their presence in the same text ID, so they are lists
+# make the corpus into a tokens object, without punctuation, do not remove numbers because they might be part of a tagged account name
+tokens <- tokens(corpus, remove_punct = TRUE)
 
-# examine the uncleaned version
-tokens
+# only keep those that have tagged accounts, then convert that into a document-feature matrix and rename the col for clarity
+tags <- tokens %>% 
+  tokens_keep(pattern = "@*") %>% 
+  dfm() %>% 
+  textstat_frequency(n = 10) %>% 
+  rename(tag = feature)
 
-# clean it up, we dont want commas or the word "a"
-tokens <- tokens(tokens, remove_punct = TRUE,
-                      remove_numbers = TRUE) # sometimes you might want to keep numbers, in this case we remove them, but we only remove stand alone numbers, not numbers that are linked to words
-
-tokens <- tokens_select(tokens, stopwords('english'),selection='remove') #stopwords lexicon built in to quanteda
-
-tokens <- tokens_tolower(tokens)
+ggplot(data = tags, aes(x = frequency, y = reorder(tag, frequency))) +
+  geom_col(aes(fill = tag)) +
+  theme_classic() +
+  labs(x = "Count",
+       y = "Tagged Accounts",
+       title = "Top 10 Most Tagged Accounts\nApril 1st, 2022 - April 10th, 2022")
 ```
 
-```{r}
-tag_tweets <- tokens(corpus, remove_punct = TRUE) %>% 
-               tokens_keep(pattern = "@*")
-
-# determine which order the words occurred in the tweets
-dfm_tag<- dfm(tag_tweets)
-
-tag_freq <- textstat_frequency(dfm_tag, n = 100)
-
-# docfreq = amount of docs (tweets) the #word occurred in 
-head(tag_freq, 10)
-
-# tidytext gives us tools to convert to tidy from non-tidy formats
-tag_tib<- tidy(dfm_tag) # tidy() works for document frequency matrices
-
-tag_tib %>%
-   count(term) %>%
-   with(wordcloud(term, n, max.words = 100))
-```
-
-
-The Twitter data download comes with a variable called “Sentiment” that must be calculated by Brandwatch. Use your own method to assign each tweet a polarity score (Positive, Negative, Neutral) and compare your classification to Brandwatch’s (hint: you’ll need to revisit the “raw_tweets” data frame).
+## The Twitter data download comes with a variable called “Sentiment” that must be calculated by Brandwatch. Use your own method to assign each tweet a polarity score (Positive, Negative, Neutral) and compare your classification to Brandwatch’s (hint: you’ll need to revisit the “raw_tweets” data frame).
 
 ```{r}
-raw_tweets
+# tokenize tweets to individual words so they will be 1 word per row
+sentiment <- tweets %>%
+  select(id, date, text) %>%
+  unnest_tokens(output = word, input = text, token = "words") %>%
+  anti_join(stop_words, by = "word") %>% # remove stop words
+  left_join(bing_sent, by = "word") %>% # join the words to the sentiment words (label with a sentiment)
+  left_join(
+    tribble(
+      ~sentiment, ~sent_score,
+      "positive", 1,
+      "negative", -1),
+    by = "sentiment")
+
+my_sentiment <- get_sentences(data$Title) %>% 
+  sentiment() %>% 
+  group_by(element_id) %>% 
+  summarize(sentiment_score = mean(sentiment)) %>% 
+  mutate(sentiment = case_when(
+    sentiment_score < 0 ~ "negative",
+    sentiment_score == 0 ~ "neutral",
+    sentiment_score > 0 ~ "positive")) %>% 
+  group_by(sentiment) %>% 
+  summarize(count = n()) %>% 
+  mutate(color = c("firebrick", "purple", "forestgreen"))
+
+my_plot <- ggplot(data = my_sentiment, aes(x = count, y = reorder(sentiment, count), fill = color)) + 
+  geom_col(stat="identity") +
+  xlim(0, 2400) +
+  scale_fill_identity() +
+  labs(x = "",
+       y = "",
+       subtitle = "My Sentiment Analysis")
+
+# Brandwatch sentiment 
+raw_tweets <- read.csv("/Users/juliet/Documents/MEDS/Text_Analysis/Text_Analysis/Assignment_3/IPCC_tweets_April1-10_sample.csv", header=TRUE)
+
+# Extract Date and Title fields
+data <- raw_tweets[,c(4,6, 10:11)] 
+
+clean_tweets <- tibble(id = seq(1:length(data$Title)),
+                 text = data$Title,
+                 date = as.Date(data$Date,'%m/%d/%y'),
+                 sentiment = data$Sentiment,
+                 emotion = data$Emotion)
+
+brandwatch_sentiment <- clean_tweets %>%
+  filter(sentiment %in% c("positive", "negative", "neutral")) %>% 
+  group_by(sentiment) %>% 
+  summarize(count = n()) %>% 
+  mutate(color = c("firebrick", "purple", "forestgreen"))
+
+brandwatch_plot <- ggplot(data = brandwatch_sentiment, aes(x = count, y = reorder(sentiment, count), fill = color)) +
+  geom_col() +
+  xlim(0, 2400) +
+  scale_fill_identity() +
+  labs(x = "",
+       y = "",
+       subtitle = "Brandwatch Sentiment Analysis")
+
+# use patchwork to combine plots
+combined_plots <- (brandwatch_plot / my_plot) +
+  plot_annotation(title = "Tweet Sentiment: My Analysis versus Brandwatch Analysis") +
+  plot_layout(guides = "collect")
+
+combined_plots
 ```
 
 

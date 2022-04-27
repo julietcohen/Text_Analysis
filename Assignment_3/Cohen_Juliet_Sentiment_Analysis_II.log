@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2021) (preloaded format=pdflatex 2022.1.9)  25 APR 2022 21:04
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2021) (preloaded format=pdflatex 2022.1.9)  26 APR 2022 17:00
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -484,7 +484,11 @@ Package: makecell 2009/08/03 V0.1e Managing of Tab Column Heads and Cells
 File: l3backend-pdftex.def 2021-03-18 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count306
 \l__pdf_internal_box=\box68
-) (./Cohen_Juliet_Sentiment_Analysis_II.aux)
+) (./Cohen_Juliet_Sentiment_Analysis_II.aux
+
+LaTeX Warning: Label `tab:unnamed-chunk-3' multiply defined.
+
+)
 \openout1 = `Cohen_Juliet_Sentiment_Analysis_II.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 124.
@@ -646,48 +650,109 @@ df Graphic file (type pdf)
 <use Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-1-1.pd
 f>
 Package pdftex.def Info: Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/
-unnamed-chunk-1-1.pdf  used on input line 152.
+unnamed-chunk-1-1.pdf  used on input line 150.
 (pdftex.def)             Requested size: 457.72285pt x 313.17877pt.
 [1
 
 {/usr/local/texlive/2021/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2 <./C
-ohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-1-1.pdf>]
+ohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-1-1.pdf>] [3
+]
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 233.
+(Font)              <10> on input line 274.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 233.
+(Font)              <7> on input line 274.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 233.
+(Font)              <5> on input line 274.
 
-LaTeX Warning: Float too large for page by 630.85812pt on input line 438.
+LaTeX Warning: Float too large for page by 630.85812pt on input line 479.
 
-[3] [4pdfTeX warning (ext4): destination with the same identifier (name{table.1
+<Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-3-1.pdf, i
+d=39, 453.695pt x 313.17pt>
+File: Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-3-1.p
+df Graphic file (type pdf)
+<use Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-3-1.pd
+f>
+Package pdftex.def Info: Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/
+unnamed-chunk-3-1.pdf  used on input line 542.
+(pdftex.def)             Requested size: 453.6939pt x 313.16922pt.
+[4] [5pdfTeX warning (ext4): destination with the same identifier (name{table.1
 }) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   
-l.473 \end{document}
-                    ] (./Cohen_Juliet_Sentiment_Analysis_II.aux) ) 
+l.547 ...egative-words-so-they-are-identifiable.}}
+                                                  ] [6pdfTeX warning (ext4): de
+stination with the same identifier (name{table.2}) has been already used, dupli
+cate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  
+l.563 \end{Shaded}
+                   <./Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unn
+amed-chunk-3-1.pdf>]
+<Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-4-1.pdf, i
+d=63, 298.11375pt x 307.1475pt>
+File: Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-4-1.p
+df Graphic file (type pdf)
+<use Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-4-1.pd
+f>
+Package pdftex.def Info: Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/
+unnamed-chunk-4-1.pdf  used on input line 569.
+(pdftex.def)             Requested size: 298.13121pt x 307.16548pt.
+
+Overfull \vbox (0.54716pt too high) detected at line 600
+ []
+
+[7 <./Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-4-1.p
+df>]
+<Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/corpus_&_quantdata_clean
+ing-1.pdf, id=78, 457.71pt x 313.17pt>
+File: Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/corpus_&_quantdata_
+cleaning-1.pdf Graphic file (type pdf)
+<use Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/corpus_&_quantdata_c
+leaning-1.pdf>
+Package pdftex.def Info: Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/
+corpus_&_quantdata_cleaning-1.pdf  used on input line 602.
+(pdftex.def)             Requested size: 457.72285pt x 313.17877pt.
+
+Overfull \vbox (0.33823pt too high) detected at line 647
+ []
+
+[8 <./Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/corpus_&_quantdata_
+cleaning-1.pdf>]
+<Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-5-1.pdf, i
+d=92, 454.69875pt x 295.1025pt>
+File: Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-5-1.p
+df Graphic file (type pdf)
+<use Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-5-1.pd
+f>
+Package pdftex.def Info: Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/
+unnamed-chunk-5-1.pdf  used on input line 690.
+(pdftex.def)             Requested size: 454.70456pt x 295.10626pt.
+[9] [10 <./Cohen_Juliet_Sentiment_Analysis_II_files/figure-latex/unnamed-chunk-
+5-1.pdf>] (./Cohen_Juliet_Sentiment_Analysis_II.aux)
+
+LaTeX Warning: There were multiply-defined labels.
+
+ ) 
 Here is how much of TeX's memory you used:
- 14452 strings out of 478994
- 214722 string characters out of 5858185
- 586790 words of memory out of 5000000
- 31593 multiletter control sequences out of 15000+600000
- 446193 words of font info for 93 fonts, out of 8000000 for 9000
+ 14517 strings out of 478994
+ 218598 string characters out of 5858185
+ 591778 words of memory out of 5000000
+ 31625 multiletter control sequences out of 15000+600000
+ 449759 words of font info for 100 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 85i,9n,88p,539b,373s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/local/t
-exlive/2021/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/local/texlive/2021/t
-exmf-dist/fonts/enc/dvips/lm/lm-ec.enc}</usr/local/texlive/2021/texmf-dist/font
-s/type1/public/lm/lmbx12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/pu
-blic/lm/lmr10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/lm/lmr
-12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/lm/lmr17.pfb></us
-r/local/texlive/2021/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/local/te
-xlive/2021/texmf-dist/fonts/type1/public/lm/lmtti10.pfb>
-Output written on Cohen_Juliet_Sentiment_Analysis_II.pdf (4 pages, 165059 bytes
-).
+ 85i,9n,88p,3494b,377s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/local/texlive/2021/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/local
+/texlive/2021/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}</usr/local/texlive/2021/
+texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2021/texmf-dist
+/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type
+1/public/lm/lmr12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/lm
+/lmr17.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/lm/lmtt10.pfb
+></usr/local/texlive/2021/texmf-dist/fonts/type1/public/lm/lmtti10.pfb>
+Output written on Cohen_Juliet_Sentiment_Analysis_II.pdf (10 pages, 200050 byte
+s).
 PDF statistics:
- 72 PDF objects out of 1000 (max. 8388607)
- 56 compressed objects within 1 object stream
- 8 named destinations out of 1000 (max. 500000)
- 22542 words of extra memory for PDF output out of 24883 (max. 10000000)
+ 160 PDF objects out of 1000 (max. 8388607)
+ 125 compressed objects within 2 object streams
+ 25 named destinations out of 1000 (max. 500000)
+ 24650 words of extra memory for PDF output out of 24883 (max. 10000000)
 
