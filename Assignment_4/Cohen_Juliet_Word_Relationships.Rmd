@@ -1,0 +1,144 @@
+---
+title: "EDS 231 - Word Relationships"
+author: "Juliet Cohen"
+date: '2022-05-01'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyr) #text analysis in R
+library(pdftools)
+library(lubridate) #working with date data
+library(tidyverse)
+library(tidytext)
+library(readr)
+library(quanteda)
+library(readtext) #quanteda subpackage for reading pdf
+library(quanteda.textstats)
+library(quanteda.textplots)
+library(ggplot2)
+library(forcats)
+library(stringr)
+library(quanteda.textplots)
+library(widyr)# pairwise correlations
+library(igraph) #network plots
+library(ggraph)
+```
+
+## Import EPA EJ Data
+
+```{r pdf_import}
+setwd('.')
+files <- list.files(pattern = "pdf$")
+
+ej_reports <- lapply(files, pdf_text)
+
+ej_pdf <- readtext("*.pdf", docvarsfrom = "filenames", 
+                    docvarnames = c("type", "subj", "year"),
+                    sep = "_")
+
+#creating an initial corpus containing our data
+epa_corp <- corpus(x = ej_pdf, text_field = "text" )
+summary(epa_corp)
+
+#I'm adding some additional, context-specific stop words to stop word lexicon
+more_stops <-c("2015","2016", "2017", "2018", "2019", "2020", "www.epa.gov", "https")
+add_stops<- tibble(word = c(stop_words$word, more_stops)) 
+stop_vec <- as_vector(add_stops)
+```
+
+Now we'll create some different data objects that will set us up for the subsequent analyses
+
+```{r tidy}
+#convert to tidy format and apply my stop words
+raw_text <- tidy(epa_corp)
+
+#Distribution of most frequent words across documents
+raw_words <- raw_text %>%
+  mutate(year = as.factor(year)) %>%
+  unnest_tokens(word, text) %>%
+  anti_join(add_stops, by = 'word') %>%
+  count(year, word, sort = TRUE)
+
+#number of total words by document  
+total_words <- raw_words %>% 
+  group_by(year) %>% 
+  summarize(total = sum(n))
+
+report_words <- left_join(raw_words, total_words)
+
+# for the analysis that we want to do at the word level:
+par_tokens <- unnest_tokens(raw_text, output = paragraphs, input = text, token = "paragraphs")
+
+par_tokens <- par_tokens %>%
+ mutate(par_id = 1:n())
+
+par_words <- unnest_tokens(par_tokens, output = word, input = paragraphs, token = "words")
+```
+
+```{r quanteda_init}
+tokens <- tokens(epa_corp, remove_punct = TRUE) # create token obj
+toks1<- tokens_select(tokens, min_nchar = 3)
+toks1 <- tokens_tolower(toks1)
+toks1 <- tokens_remove(toks1, pattern = (stop_vec)) # remove stop words
+dfm <- dfm(toks1) # has docs in 1 col, the rows refer to num of occurrences for each word in the corpus in the doc
+# fundamental obj for text analysis in quanteda
+
+#first the basic frequency stat
+tstat_freq <- textstat_frequency(dfm, n = 5, groups = year)
+head(tstat_freq, 10)
+```
+
+## 1. What are the most frequent trigrams in the dataset? How does this compare to the most frequent bigrams? Which n-gram seems more informative here, and why?
+
+Start by looking at bigrams:
+
+```{r convert_dfm}
+toks2 <- tokens_ngrams(toks1, n=2) # bigram, tokenize, it goes thru the text with a 2 word window and creates every pair with a 1 step, then chooses the highest frequency pairs for this table
+dfm2 <- dfm(toks2)
+dfm2 <- dfm_remove(dfm2, pattern = c(stop_vec))
+freq_words2 <- textstat_frequency(dfm2, n=20)
+freq_words2$token <- rep("bigram", 20)
+#tokens1 <- tokens_select(tokens1,pattern = stopwords("en"), selection = "remove")
+
+head(freq_words2)
+```
+
+The top 5 most frequent bigrams are:\
+1. environmental_justice\
+2. technical_assistance\
+3. drinking_water\
+4. public_health\
+5. progress_report
+
+
+```{r convert_dfm}
+toks2 <- tokens_ngrams(toks1, n = 3) # trigram, tokenize, it goes thru the text with a 3 word window and creates every pair with a 1 step, then chooses the highest frequency pairs for this table
+dfm2 <- dfm(toks2)
+dfm2 <- dfm_remove(dfm2, pattern = c(stop_vec))
+freq_words2 <- textstat_frequency(dfm2, n=20)
+freq_words2$token <- rep("trigram", 20)
+
+head(freq_words2)
+```
+
+The top 5 most frequent trigrams are:\
+1. justice_fy2017_progress\
+2. fy2017_progress_report\
+3. environmental_public_health\
+4. environmental_justice_fy2017\
+5. national_environmental_justice
+
+The trigrams show more repetitive words such as justice, progress, fy2017, and environmental, and appear to be words that do not form a sensical, stand-alone phrase when read together, while the bigrams are more diverse and the words make sense when read together in seqeuence. Therefore I think that bigrams are more informative here.
+
+
+
+Choose a new focal term to replace "justice" and recreate the correlation table and network (see corr_paragraphs and corr_network chunks). Explore some of the plotting parameters in the cor_network chunk to see if you can improve the clarity or amount of information your plot conveys. Make sure to use a different color for the ties!
+
+Write a function that allows you to conduct a keyness analysis to compare two individual EPA reports (hint: that means target and reference need to both be individual reports). Run the function on 3 pairs of reports, generating 3 keyness plots.
+
+Select a word or multi-word term of interest and identify words related to it using windowing and keyness comparison. To do this you will create to objects: one containing all words occurring within a 10-word window of your term of interest, and the second object containing all other words. Then run a keyness comparison on these objects. Which one is the target, and which the reference? Hint
