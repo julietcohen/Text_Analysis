@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
 ```{r}
@@ -32,14 +32,27 @@ library(ggraph)
 ## Import EPA EJ Data
 
 ```{r pdf_import}
-setwd('.')
-files <- list.files(pattern = "pdf$")
+# setwd('.')
+# files <- list.files(pattern = "pdf$")
+# 
+# ej_reports <- lapply(files, pdf_text)
+
+#-------
+setwd(".")
+files <- list.files(pattern = "*pdf$")
+
+files <- str_subset(files, pattern="EPA")
 
 ej_reports <- lapply(files, pdf_text)
 
-ej_pdf <- readtext("*.pdf", docvarsfrom = "filenames", 
+ej_pdf <- readtext(files, docvarsfrom = "filenames", 
                     docvarnames = c("type", "subj", "year"),
                     sep = "_")
+#-------
+
+# ej_pdf <- readtext("*.pdf", docvarsfrom = "filenames", 
+#                     docvarnames = c("type", "year"),
+#                     sep = "_")
 
 #creating an initial corpus containing our data
 epa_corp <- corpus(x = ej_pdf, text_field = "text" )
@@ -97,7 +110,7 @@ head(tstat_freq, 10)
 
 Start by looking at bigrams:
 
-```{r convert_dfm}
+```{r}
 toks2 <- tokens_ngrams(toks1, n=2) # bigram, tokenize, it goes thru the text with a 2 word window and creates every pair with a 1 step, then chooses the highest frequency pairs for this table
 dfm2 <- dfm(toks2)
 dfm2 <- dfm_remove(dfm2, pattern = c(stop_vec))
@@ -133,12 +146,119 @@ The top 5 most frequent trigrams are:\
 4. environmental_justice_fy2017\
 5. national_environmental_justice
 
-The trigrams show more repetitive words such as justice, progress, fy2017, and environmental, and appear to be words that do not form a sensical, stand-alone phrase when read together, while the bigrams are more diverse and the words make sense when read together in seqeuence. Therefore I think that bigrams are more informative here.
+The trigrams show more repetitive words such as justice, progress, fy2017, and environmental, and appear to be words that do not form a sensical, stand-alone phrase when read together, while the bigrams are more diverse and the words make sense when read together in sequence. Therefore I think that bigrams are more informative here.
+
+## 2. Choose a new focal term to replace "justice" and recreate the correlation table and network (see corr_paragraphs and corr_network chunks). Explore some of the plotting parameters in the cor_network chunk to see if you can improve the clarity or amount of information your plot conveys. Make sure to use a different color for the ties!
+
+I replaces the term "justice" with the term "wildlife" and recreated the correlation table and network. I explored some of the plotting parameters to improve the clarity and amount of information conveyed by the plot. I used a different color for the ties. 
+
+```{r corr_paragraphs}
+word_cors <- par_words %>% 
+  add_count(par_id) %>% 
+  filter(n >= 50) %>% 
+  select(-n) %>%
+  pairwise_cor(word, par_id, sort = TRUE) # generates correlation coefficients rather than just the number of occurrences, takes a long time to run since there are tons of word pairs
+# cols = item1 and item2 and correlation
+
+wildlife_cors <- word_cors %>% 
+  filter(item1 == "wildlife")
+
+word_cors %>%
+  filter(item1 %in% c("environmental", "wildlife", "equity", "income")) %>%
+  group_by(item1) %>%
+  top_n(6) %>%
+  #slice_max(item1, n = 6) %>%
+  ungroup() %>%
+  mutate(item1 = as.factor(item1),
+  name = reorder_within(item2, correlation, item1)) %>%
+  ggplot(aes(y = name, x = correlation, fill = item1)) + 
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~item1, ncol = 2, scales = "free")+
+  scale_y_reordered() +
+  labs(y = NULL,
+         x = NULL,
+         title = "Correlations with key words",
+         subtitle = "EPA EJ Reports")
+
+#let's zoom in on just one of our key terms
+wildlife_cors <- word_cors %>% 
+  filter(item1 == "wildlife") %>%
+  mutate(n = 1:n())
+
+# Not surprisingly, the correlation between "environmental" and "justice" is by far the highest, which makes sense given the nature of these reports. How might we visualize these correlations to develop of sense of the context in which justice is discussed here?
+
+wildlife_cors  %>%
+  filter(n <= 40) %>%
+  graph_from_data_frame() %>%
+  ggraph(layout = "fr") +
+  geom_edge_link(aes(edge_alpha = correlation, edge_width = correlation), edge_colour = "coral") +
+  geom_node_point(size = 3) +
+  geom_node_text(aes(label = name), repel = TRUE, 
+                 point.padding = unit(0.5, "lines")) +
+  theme_void()
+```
+
+## 3. Write a function that allows you to conduct a keyness analysis to compare two individual EPA reports (hint: that means target and reference need to both be individual reports). Run the function on 3 pairs of reports, generating 3 keyness plots.
+
+Use all of the frequencies for each word in each document and calculate a chi-square to see which words occur significantly more or less within a particular target document.
+
+Example from class:
+```{r}
+keyness <- textstat_keyness(dfm, target = 2)
+textplot_keyness(keyness)
+```
+
+```{r}
+
+```
+
+```{r, echo=FALSE, include=FALSE}
+# keyness_analysis <- function(data1, data2, target_index) {
+#   keyness1 <- textstat_keyness(data1, target = target_index)
+#   keyness2 <- textstat_keyness(data2, target = target_index)
+#   plot1 <- textplot_keyness(keyness1)
+#   plot2 <- textplot_keyness(keyness2)
+#   plot <- plot1 / plot2
+#   return(plot)
+# }
+```
+
+Function to conduct a keyness analysis to compare 2 individuals EPA reports at a time:
+
+```{r}
+keyness_analysis <- function(data, report1, report2) {
+  doc1 <- seq(ndoc(data)) %in% report1
+  doc2 <- seq(ndoc(data)) %in% report2
+  keyness <- textstat_keyness(doc1, doc2)
+  textplot_keyness(keyness)
+}
+
+keyness_analysis(data = dfm, report1 = 1, report2 = 2)
+```
+
+Test Function:
+```{r}
+keyness_analysis(data = dfm, target1 = 1, target2 = 2)
+```
+
+```{r}
+keyness_analysis(data = dfm, target1 = 3, target2 = 4)
+```
+
+```{r}
+keyness_analysis(data = dfm, target1 = 5, target2 = 6)
+```
+
+## 4. Select a word or multi-word term of interest and identify words related to it using windowing and keyness comparison. To do this you will create to objects: one containing all words occurring within a 10-word window of your term of interest, and the second object containing all other words. Then run a keyness comparison on these objects. Which one is the target, and which the reference? Hint
+
+```{r}
+
+```
 
 
 
-Choose a new focal term to replace "justice" and recreate the correlation table and network (see corr_paragraphs and corr_network chunks). Explore some of the plotting parameters in the cor_network chunk to see if you can improve the clarity or amount of information your plot conveys. Make sure to use a different color for the ties!
 
-Write a function that allows you to conduct a keyness analysis to compare two individual EPA reports (hint: that means target and reference need to both be individual reports). Run the function on 3 pairs of reports, generating 3 keyness plots.
 
-Select a word or multi-word term of interest and identify words related to it using windowing and keyness comparison. To do this you will create to objects: one containing all words occurring within a 10-word window of your term of interest, and the second object containing all other words. Then run a keyness comparison on these objects. Which one is the target, and which the reference? Hint
+
+
+
