@@ -32,12 +32,6 @@ library(ggraph)
 ## Import EPA EJ Data
 
 ```{r pdf_import}
-# setwd('.')
-# files <- list.files(pattern = "pdf$")
-# 
-# ej_reports <- lapply(files, pdf_text)
-
-#-------
 setwd(".")
 files <- list.files(pattern = "*pdf$")
 
@@ -48,11 +42,6 @@ ej_reports <- lapply(files, pdf_text)
 ej_pdf <- readtext(files, docvarsfrom = "filenames", 
                     docvarnames = c("type", "subj", "year"),
                     sep = "_")
-#-------
-
-# ej_pdf <- readtext("*.pdf", docvarsfrom = "filenames", 
-#                     docvarnames = c("type", "year"),
-#                     sep = "_")
 
 #creating an initial corpus containing our data
 epa_corp <- corpus(x = ej_pdf, text_field = "text" )
@@ -208,9 +197,26 @@ keyness <- textstat_keyness(dfm, target = 2)
 textplot_keyness(keyness)
 ```
 
+Function:
 ```{r}
-
+keyness_analysis <- function(index) {
+    epa_corp_subset <- c(epa_corp[index], epa_corp[index + 1])
+    tokens <- tokens(epa_corp_subset, remove_punct = TRUE) # create token obj
+    toks1 <- tokens_select(tokens, min_nchar = 3)
+    toks1 <- tokens_tolower(toks1)
+    toks1 <- tokens_remove(toks1, pattern = (stop_vec)) # remove stop words
+    dfm <- dfm(toks1)
+    
+    keyness <- textstat_keyness(dfm, target = 1)
+    return(textplot_keyness(keyness))
+}
 ```
+
+```{r}
+keyness_analysis(index = 5)
+```
+
+
 
 ```{r, echo=FALSE, include=FALSE}
 # keyness_analysis <- function(data1, data2, target_index) {
