@@ -1,6 +1,8 @@
 ---
 title: "Topic 6: Topic Analysis"
-
+author: "Juliet Cohen"
+date: '2022-05-09'
+output: pdf_document
 ---
 
 ```{r packages}
@@ -69,7 +71,7 @@ topicModel_k9 <- LDA(dfm, k, method="Gibbs", control=list(iter = 500, verbose = 
 #nTerms(dfm_comm) 
 
 tmResult <- posterior(topicModel_k9)
-tmResult
+#tmResult
 
 attributes(tmResult)
 #ncol(tmResult) # does not run
@@ -82,19 +84,19 @@ terms(topicModel_k9, 10)
 
 Some of those topics seem related to the cross-cutting and additional topics identified in the EPA's response to the public comments:
 
-1\. Title VI of the Civil Rights Act of 1964
+1. Title VI of the Civil Rights Act of 1964
 
 2.[EJSCREEN](https://www.epa.gov/ejscreen/download-ejscreen-data)
 
-3\. climate change, climate adaptation and promoting greenhouse gas reductions co-benefits
+3. climate change, climate adaptation and promoting greenhouse gas reductions co-benefits
 
-4\. overburdened communities and other stakeholders to meaningfully, effectively, and transparently participate in aspects of EJ 2020, as well as other agency processes
+4. overburdened communities and other stakeholders to meaningfully, effectively, and transparently participate in aspects of EJ 2020, as well as other agency processes
 
-5\. utilize multiple Federal Advisory Committees to better obtain outside environmental justice perspectives
+5. utilize multiple Federal Advisory Committees to better obtain outside environmental justice perspectives
 
-6\. environmental justice and area-specific training to EPA staff
+6. environmental justice and area-specific training to EPA staff
 
-7\. air quality issues in overburdened communities
+7. air quality issues in overburdened communities
 
 So we could guess that there might be a 16 topics (9 priority + 7 additional). Or we could calculate some metrics from the data. (what initial value of k gives us the best model)
 
