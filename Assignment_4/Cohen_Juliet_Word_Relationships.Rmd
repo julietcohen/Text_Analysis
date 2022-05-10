@@ -27,6 +27,7 @@ library(quanteda.textplots)
 library(widyr)# pairwise correlations
 library(igraph) #network plots
 library(ggraph)
+library(gt)
 ```
 
 ## Import EPA EJ Data
@@ -139,7 +140,7 @@ The trigrams show more repetitive words such as justice, progress, fy2017, and e
 
 ## 2. Choose a new focal term to replace "justice" and recreate the correlation table and network (see corr_paragraphs and corr_network chunks). Explore some of the plotting parameters in the cor_network chunk to see if you can improve the clarity or amount of information your plot conveys. Make sure to use a different color for the ties!
 
-I replaces the term "justice" with the term "wildlife" and recreated the correlation table and network. I explored some of the plotting parameters to improve the clarity and amount of information conveyed by the plot. I used a different color for the ties. 
+I replaces the term "justice" with the term "contaminant" and recreated the correlation table and network. I explored some of the plotting parameters to improve the clarity and amount of information conveyed by the plot. I used a different color for the ties. 
 
 ```{r corr_paragraphs}
 word_cors <- par_words %>% 
@@ -149,35 +150,33 @@ word_cors <- par_words %>%
   pairwise_cor(word, par_id, sort = TRUE) # generates correlation coefficients rather than just the number of occurrences, takes a long time to run since there are tons of word pairs
 # cols = item1 and item2 and correlation
 
-wildlife_cors <- word_cors %>% 
-  filter(item1 == "wildlife")
+contaminant_cors <- word_cors %>% 
+  filter(item1 == "contaminant")
 
 word_cors %>%
-  filter(item1 %in% c("environmental", "wildlife", "equity", "income")) %>%
+  filter(item1 %in% c("environmental", "contaminant", "equity", "income")) %>%
   group_by(item1) %>%
   top_n(6) %>%
   #slice_max(item1, n = 6) %>%
   ungroup() %>%
   mutate(item1 = as.factor(item1),
-  name = reorder_within(item2, correlation, item1)) %>%
+         name = reorder_within(item2, correlation, item1)) %>%
   ggplot(aes(y = name, x = correlation, fill = item1)) + 
   geom_col(show.legend = FALSE) +
   facet_wrap(~item1, ncol = 2, scales = "free")+
   scale_y_reordered() +
   labs(y = NULL,
-         x = NULL,
-         title = "Correlations with key words",
-         subtitle = "EPA EJ Reports")
+       x = NULL,
+       title = "Correlations with key words",
+       subtitle = "EPA EJ Reports")
 
 #let's zoom in on just one of our key terms
-wildlife_cors <- word_cors %>% 
-  filter(item1 == "wildlife") %>%
+contaminant_cors <- word_cors %>% 
+  filter(item1 == "contaminant") %>%
   mutate(n = 1:n())
 
-# Not surprisingly, the correlation between "environmental" and "justice" is by far the highest, which makes sense given the nature of these reports. How might we visualize these correlations to develop of sense of the context in which justice is discussed here?
-
-wildlife_cors  %>%
-  filter(n <= 40) %>%
+contaminant_cors  %>%
+  filter(n <= 35) %>%
   graph_from_data_frame() %>%
   ggraph(layout = "fr") +
   geom_edge_link(aes(edge_alpha = correlation, edge_width = correlation), edge_colour = "coral") +
@@ -190,12 +189,6 @@ wildlife_cors  %>%
 ## 3. Write a function that allows you to conduct a keyness analysis to compare two individual EPA reports (hint: that means target and reference need to both be individual reports). Run the function on 3 pairs of reports, generating 3 keyness plots.
 
 Use all of the frequencies for each word in each document and calculate a chi-square to see which words occur significantly more or less within a particular target document.
-
-Example from class:
-```{r}
-keyness <- textstat_keyness(dfm, target = 2)
-textplot_keyness(keyness)
-```
 
 Function:
 ```{r}
@@ -212,53 +205,44 @@ keyness_analysis <- function(index) {
 }
 ```
 
+Run function to demonstrate 3 EPA comparisons:
 ```{r}
-keyness_analysis(index = 5)
+keyness_analysis(index = 2)
+keyness_analysis(index = 3)
+keyness_analysis(index = 4)
 ```
 
 
 
-```{r, echo=FALSE, include=FALSE}
-# keyness_analysis <- function(data1, data2, target_index) {
-#   keyness1 <- textstat_keyness(data1, target = target_index)
-#   keyness2 <- textstat_keyness(data2, target = target_index)
-#   plot1 <- textplot_keyness(keyness1)
-#   plot2 <- textplot_keyness(keyness2)
-#   plot <- plot1 / plot2
-#   return(plot)
-# }
-```
+## 4. Select a word or multi-word term of interest and identify words related to it using windowing and keyness comparison. To do this you will create two objects: one containing all words occurring within a 10-word window of your term of interest, and the second object containing all other words. Then run a keyness comparison on these objects. Which one is the target, and which the reference? Hint
 
-Function to conduct a keyness analysis to compare 2 individuals EPA reports at a time:
+All words occurring within a 10-word window of my term of interest ("contaminant" and its variants) is represented by the object `toks_inside` which serves as the target, and all other words are represented by the object `toks_outside` which serves as the reference. In the dataframe I create called `tstat_key_inside`, the columns `n_target` and `n_reference` contribute to the statistical analysis done on the word associations. 
 
 ```{r}
-keyness_analysis <- function(data, report1, report2) {
-  doc1 <- seq(ndoc(data)) %in% report1
-  doc2 <- seq(ndoc(data)) %in% report2
-  keyness <- textstat_keyness(doc1, doc2)
-  textplot_keyness(keyness)
-}
+# start with the obj toks1 because that is in the format we want
+# create an object containing all words occurring within a 10-word window of my term of interest: contaminant & its variants, plus an object that contains all other words
+# We select two tokens objects for words inside and outside of the 10-word windows of the keywords
+contam_words <- c("contaminant", "contamination", "contaminating", "contaminated", "contaminate", "contaminates")
+toks_inside <- tokens_keep(toks1, pattern = contam_words, window = 10)
+toks_inside <- tokens_remove(toks_inside, pattern = contam_words) # remove the keywords
+toks_outside <- tokens_remove(toks1, pattern = contam_words, window = 10)
 
-keyness_analysis(data = dfm, report1 = 1, report2 = 2)
-```
+# We compute words’ association with the keywords using textstat_keyness().
+dfmat_inside <- dfm(toks_inside)
+dfmat_outside <- dfm(toks_outside)
 
-Test Function:
-```{r}
-keyness_analysis(data = dfm, target1 = 1, target2 = 2)
-```
+# combine the objects
+tstat_key_inside <- textstat_keyness(rbind(dfmat_inside, dfmat_outside), 
+                                     target = seq_len(ndoc(dfmat_inside)))
 
-```{r}
-keyness_analysis(data = dfm, target1 = 3, target2 = 4)
-```
+# take a look at the top 10 words associated with my term of interest
+head(tstat_key_inside, 20)
 
-```{r}
-keyness_analysis(data = dfm, target1 = 5, target2 = 6)
-```
+# make formal table of the top 10 words associated with my term
+keyness_table <- gt(tstat_key_inside[1:20]) %>% 
+  tab_header(title = "Table 1. Top 20 words associated with 'contaminant' and its variants")
 
-## 4. Select a word or multi-word term of interest and identify words related to it using windowing and keyness comparison. To do this you will create to objects: one containing all words occurring within a 10-word window of your term of interest, and the second object containing all other words. Then run a keyness comparison on these objects. Which one is the target, and which the reference? Hint
-
-```{r}
-
+keyness_table
 ```
 
 
