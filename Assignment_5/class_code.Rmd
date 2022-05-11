@@ -247,18 +247,9 @@ terms(topicModel_k15, 10)
 
 ### Assignment Model #3
 
-For the final model for this data, I will use the function `FindTopicsNumber()` to help me visualize the best value of `k`, but I will change it from the class code by adjusting the `topics` argument. 
+For the final model for this data, I will use the function `FindTopicsNumber()` to help me visualize the best value of `k`, but I will change it from the class code by adjusting the `topics` argument. I also tried changing the method argument (there are other options than the ones here in the function documentation) but they did not run.
 
 ```{r}
-# result <- FindTopicsNumber(
-#   dfm,
-#   topics = seq(from = 2, to = 20, by = 1),
-#   metrics = c("CaoJuan2009",  "Deveaud2014"),
-#   method = "Gibbs",
-#   control = list(seed = 77),
-#   verbose = TRUE
-# )
-
 # fit the model by running a series of models, starting with 2 topics and ranging to 20 topics
 result <- FindTopicsNumber(
   dfm,
